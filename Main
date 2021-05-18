@@ -1,0 +1,399 @@
+import datetime
+import os
+import re
+import shutil
+import psycopg2 as ps
+import time
+import createPlatform
+import Download_build as DwnldBuild
+
+class Main:
+
+    def settings(self):
+
+        self.pathDirectory = input()
+
+
+class classBDScript:
+
+    def inputDatabase(self):
+
+        #print('Enter name database:\n(If you did not rename the database, on press Enter)')
+        dateDatabase = []
+        global database
+        global username
+        global host
+        global port
+        database = ('postgres')
+        #database = input()
+        #if database == '':
+        #    database = ('postgres')
+
+        print('Enter username:\n(If you want to use default user(postgres), on press Enter)')
+        username = input()
+        if username == '':
+            username = ('tpuser')
+
+        print('Enter password:')
+        password = input()
+        if password == '':
+            password = ('q1w2e3r4')
+
+
+        print('If you want to use default host(127.0.0.1) and port(5432), on press Enter.\nIf you use diferent host and port, on press any diferen key.')
+        defHP = input()
+        if defHP != '':
+            print('Enter host:')
+            host = input()
+            print('Enter port:')
+            port = input()
+        elif defHP == '':
+            host = ('127.0.0.1')
+            port = ('5432')
+
+        dateDatabase.append(database)
+        dateDatabase.append(username)
+        dateDatabase.append(password)
+        dateDatabase.append(host)
+        dateDatabase.append(port)
+
+        return dateDatabase
+
+    def create_connection(self, db_name, db_user, db_password, db_host, db_port):
+        connection = None
+        try:
+            connection = ps.connect(
+                database=db_name,
+                user=db_user,
+                password=db_password,
+                host=db_host,
+                port=db_port,
+            )
+            print("Connection to PostgreSQL DB successful")
+        except ps.OperationalError as e:
+            print(f"The error '{e}' occurred\n"
+                  f"Check current username and password \n")
+            while True:
+                flag = input('Back to the beginning of the process? [Y/N]: ')
+
+                if flag == 'Y':
+                    main()
+                else:
+                    print("Tools exit")
+                    raise SystemExit
+
+        return connection
+
+    def inputDatabase(self, create_connection, query):
+        create_connection.autocommit = True
+        cursor = create_connection.cursor()
+        try:
+            cursor.execute(query)
+            print("Executed successfully \n")
+        except ps.OperationalError as e:
+            print(f"The error: '{e}' occurred \n")
+        except ps.errors.InvalidForeignKey as In:
+            print(f"The error: '{In}' occurred \n")
+        except ps.errors.SyntaxError as dd:
+            print(f"The error: '{dd}' occurred \n")
+        except ps.errors.DuplicateDatabase as pg:
+            print(f"The error: " + str({pg}))
+            while True:
+                flag = input('Back to the beginning of the process? [Y/N] \n')
+                             #'Do you want to drop this database and go back to the beginning of the process? [D]')
+
+
+                if flag == 'Y':
+                    main()
+                #elif flag == 'D':
+                #    dropDB()
+                #    main()
+                else:
+                    print("Tools exit")
+                    raise SystemExit
+
+    def scriptSQL(self,directoryGateway):
+
+        try:
+            #nameSciprt = ['\\db_init.sql', '\\gateway.sql']
+            #nameSciprt = ['\\Postgres\\db_init.sql', '\\Postgres\\gateway.sql', '\\Postgres\\root.sql', '\\Postgres\\mt5_addition.sql',  '\\Postgres\\fix_srv.sql']
+            nameSciprt = ['\\Postgres\\db_init.sql', '\\Postgres\\gateway.sql', '\\Postgres\\root.sql', '\\Postgres\\mt5_addition.sql', '\\Postgres\\mt4_srv.sql', '\\Postgres\\fix_srv.sql']
+            path  = directoryGateway
+            #path = 'C:\\Users\\Григорий Миланич\\Desktop\\TP current build\\TP 3.1.0.62 Build 23-07-2020\\Postgres'
+            dateScipt = []
+
+            i = 0
+            while i < len(nameSciprt):
+                directory = open(path+nameSciprt[i])
+                dateScipt.append(' '.join(directory.readlines()))
+                directory.close()
+                i = 1 + i
+
+            #print(dateScipt)
+
+        except FileNotFoundError as e:
+            print(f"The error '{e}' occurred")
+
+        return dateScipt
+
+    def createNameDB(self, connection):
+        #firstNameDB = ['init_', 'gate_', 'mt4_']
+        print('If you want to create base db(init, gate, root) press Enter\n'
+              'If you want to create with platfrom (mt4,mt5,fix) , press on N' )
+        if input() == '':
+            firstNameDB = ['init_', 'gate_', 'root_']
+        else:
+            #firstNameDB = ['init_', 'gate_', 'root_','mt5_','mt4_','fix_']
+            firstNameDB = ['init_', 'gate_', 'root_','mt5_','mt4_','fix_']
+            #firstNameDB = ['init_', 'gate_', 'root_','mt5_']
+
+        print('Enter secondary name for new database: \n'
+              'The first name will match each of the scripts. \n'
+              'Example: "init_" + your name (test_1), the created database will be "init_test_1".\n'
+              'The created to the next BD: ' + ', '.join(firstNameDB) + ' .')
+        # 'Latin letters and the following characters are supported "_"')
+        nameDB = input()
+        # print(inputDatabase_query)
+        global dbName
+        dbName = []
+        y = 0
+        while y < len(firstNameDB):
+            dbName.append(firstNameDB[y] + nameDB)
+            y = y + 1
+
+        print(dbName)
+        nameNewDB = []
+        i = 0
+        while i < len(firstNameDB):
+            inputDatabase_query = "CREATE DATABASE " + firstNameDB[i] + nameDB + " WITH ENCODING 'UTF8' LC_COLLATE='C' LC_CTYPE='C' TEMPLATE=template0;"
+            print('Create database ' + firstNameDB[i] + nameDB)
+            classBD.inputDatabase(connection, inputDatabase_query)
+            nameNewDB.append(firstNameDB[i] + nameDB)
+            i = i + 1
+
+        return nameNewDB
+
+    def execut_script(self,sciprtSQL,nameDB,dateDatabase):
+
+        i = 0
+        while i < len(nameDB):
+            conn = classBD.create_connection(nameDB[i], dateDatabase[1], dateDatabase[2], dateDatabase[3], dateDatabase[4])
+            #print(sciprtSQL[i])
+            print('Create script to Database ' + nameDB[i])
+            classBD.inputDatabase(conn, sciprtSQL[i])
+            time.sleep(0.5)
+            i = i + 1
+
+    def execute_root(self, dateDatabase, nameDB):
+        print('If you want to execute script to db root, on press Enter\n'
+              'If you want a close tool, press on N')
+        key = input()
+
+
+        if key == '':
+
+            print('The scripts use the full database name from the previous steps.\n'
+                  'You need enter Gateway name:')
+            #gateName = input()
+            gateName = 'Gateway'
+            print('If you want to use default host(localhost) and port(45124), on press Enter.\nIf you use diferent host and port, on press any diferen key.\n')
+            #defHP = input()
+            defHP = ''
+            if defHP != '':
+                print('Enter host:')
+                host = input()
+                print('Enter port:')
+                port = input()
+            elif defHP == '':
+                host = ('http://localhost')
+                port = ('45124/')
+
+            # conn = create_connection("root_test12", "postgres", "q1w2e3r4", "127.0.0.1", "5432")
+            conn = classBD.create_connection(nameDB[2], dateDatabase[1], dateDatabase[2], dateDatabase[3], dateDatabase[4])
+            print('Create script to Database ' + nameDB[2])
+            classBD.inputDatabase(conn,
+                            "insert into gateway values ('" + gateName + "', " + "'" + host + ':' + port + "'" + ", " + "'" + host + ':' + port + "'" + " , 'server=" +
+                                          dateDatabase[3] + ";user id=" + dateDatabase[1] + ";password=" + dateDatabase[2] + ";database=" + nameDB[1] +
+                                    ";', '200', '1800', '30', '30', 'Active');\n"
+                                    #";', '200', '1800', '30', 'smtp.gmail.com', '589', 'true', 'false');\n" # version 77
+                                     "insert into web_exposure_currency values ('USD'),('EUR'),('JPY');\n"
+                                     "update tp_user set password_hash = 'f4d23e955ba8c40caa288275b36c41020fa3f5a69f519812066ed82d00b00c79e0f2783b1287d4fb572202e32efe7cd7b1c4a45a0a890cd8fbe7954782f3d8d2', salt = 'salt';")
+
+            return gateName
+
+    def dropDB(self):
+
+        i = 0
+        while i < len(dbName):
+            conn = classBD.create_connection(dbName[i], dateDatabase[1], dateDatabase[2], dateDatabase[3], dateDatabase[4])
+            # print(sciprtSQL[i])
+            print('DROP Database ' + dbName[i])
+            dropScript = 'DROP TABLE ' + dbName[i]
+            classBD.inputDatabase(conn, dropScript)
+            time.sleep(0.5)
+            i = i + 1
+
+class copySupplementaryData:
+
+    def path_s(self, pathDirectory):
+        path = []
+        for i in os.walk(pathDirectory):
+            path.append(i)
+
+        puthLicense = []
+
+        for address, dirs, files in path:
+            for file in files:
+                if file == 'SupplementaryData.dll':
+                    # print(address +'/'+file)
+                    puthLicense.append(address + '\\' + file)
+
+        #for i in puthLicense:
+        #    print(i)
+
+        return puthLicense
+
+    def currentPath(self, pathDirectory):
+
+        index = pathDirectory.rfind('\\')
+        pathDirectory = pathDirectory[0:index]
+        # print(pathDirectory)
+
+        return pathDirectory
+
+    def copy_license(self, directoryLicense, pathDirectory):
+        print('Copy file SupplementaryData from: \n"' + directoryLicense + '"\nTo directory: \n"' + pathDirectory + '\Gateway"')
+
+        try:
+            shutil.copy(directoryLicense, pathDirectory + '\\Gateway')
+            print('Copy SupplementaryData successful.')
+        except shutil.SameFileError as copyE:
+            print(copyE)
+
+    def run(self,pathDirectory = object):
+
+        print('If you need copy Supplementary Data from old build to new build, press on Enter\n'
+          'If you dont need a copy of Supplementary Data, press on N')
+
+        if input() == '':
+            curPathDirectory = copySD.currentPath(pathDirectory)
+            directoryLicense = copySD.path_s(curPathDirectory)
+            while len(directoryLicense) == 0:
+                curPathDirectory = copySD.currentPath(curPathDirectory)
+                directoryLicense = copySD.path_s(curPathDirectory)
+
+            copySD.copy_license(directoryLicense[0], pathDirectory)
+
+    #pathDirectory = ('C:\\Users\\Григорий Миланич\\Desktop\\TP current build\\TP 3.1.0.80 Build 26-10-2020\\')
+
+class setupSettingsInFile:
+
+    def gatewayConfig(self,files = object,valuesFind = object,valuesReplc = object):
+
+
+        result = re.sub(valuesFind,valuesReplc,open(files,'r').read())
+        open(files,'w').write(result)
+
+
+    def runConfigFiles(self,pathDirectory,gateName):
+        print('If you configuratoin T4B.Gateway.exe.config and Web.config/ press on Enter')
+
+        if input() == '':
+
+            setupSettingsInFile.gatewayConfig(self=0,files = pathDirectory + '\\Gateway\\T4B.Gateway.exe.config' , valuesFind = '<add key="Gate" value=.*' ,valuesReplc= '<add key="Gate" value="' + gateName + '" />')
+
+            setupSettingsInFile.gatewayConfig(self=0,files = pathDirectory + '\\Gateway\\T4B.Gateway.exe.config',valuesFind = '<add name="gate" connectionString=.*',valuesReplc= '<add name="gate" connectionString="server=' + dateDatabase[3] + ';'
+                                'user id=' + dateDatabase[1] + ';password=' + dateDatabase[2] + ';database=' + nameDB[1] + ';" providerName="Npgsql" />')
+
+            setupSettingsInFile.gatewayConfig(self=0,files = pathDirectory + '\\Gateway\\T4B.Gateway.exe.config',valuesFind = '<add name="root" connectionString=.*',valuesReplc= '<add name="root" connectionString="server=' + dateDatabase[3] + ';'
+                                'user id=' +dateDatabase[1] + ';password=' + dateDatabase[2] + ';database=' + nameDB[2] + ';" providerName="Npgsql" />')
+
+            setupSettingsInFile.gatewayConfig(self=0,files = pathDirectory + '\\Web\\Web.config',valuesFind = '<add name="root" connectionString=.*',valuesReplc= '<add name="root" connectionString="server=' + dateDatabase[3] + ';'
+                                'user id=' +dateDatabase[1] + ';password=' + dateDatabase[2] + ';database=' + nameDB[2] + ';" providerName="Npgsql" />')
+
+            setupSettingsInFile.gatewayConfig(self=0,files = pathDirectory + '\\Web\\Web.config',valuesFind = '<add name="infoEntities" connectionString=.*',valuesReplc= '<add name="infoEntities" connectionString="server=' + dateDatabase[3] + ';'
+                                'user id=' +dateDatabase[1] + ';password=' + dateDatabase[2] + ';database=' + nameDB[0] + ';" providerName="Npgsql" />')
+
+class crtPlatform:
+
+    def run(self,pathDirectory=object,):
+
+        print('Setup platform,executing and feeding rule , press on Enter\n'
+              'Attention to successfully configure, the T4B.Gateway.exe process will be run from the previously specified folder.'
+              'Please close or stop old T4B.Gateway.exe process.')
+
+        if input() == '':
+
+            os.startfile(pathDirectory + '\\Gateway\\T4B.Gateway.exe')
+            time.sleep(10)
+            errorInLog = []
+            for line in open(pathDirectory + '\\Gateway\\Logs\\' + str(datetime.date.today()) + '.csv'):
+                if 'Error' in line:
+                    errorInLog.append(re.findall('\d{2}:\d{2}:\d{2}\.\d{3};Error.*', line))
+                    # print(line)
+
+            if len(errorInLog) == 0:
+                createPlatform.mt5create(dateDatabase[3], dateDatabase[1], dateDatabase[2], nameDB[3])
+                createPlatform.mt4create(dateDatabase[3], dateDatabase[1], dateDatabase[2], nameDB[4])
+                createPlatform.fixcreate(dateDatabase[3], dateDatabase[1], dateDatabase[2], nameDB[5])
+                createPlatform.addLP()
+                createPlatform.crtRule()
+
+                # conn = classBD.create_connection(classBD.nameDB[0], dateDatabase[1], dateDatabase[2], dateDatabase[3], dateDatabase[4])
+
+                classBD.inputDatabase(classBD.create_connection(nameDB[0], dateDatabase[1], dateDatabase[2], dateDatabase[3],dateDatabase[4]),
+                    "insert into servers_info values (default,'Tools for Brokers Pte. Ltd. |Test','true');")
+
+                feedingSettings = ("update feeder set enabled = 'true';"
+                                   "insert into feed_aggregation values (default,'Agg','TopPrice');"
+                                   "insert into feed_aggregation_lps values ('1','1');"
+                                   "insert into feeding_platform values "
+                                   "(default,'MT5 feed','1','1',null,'true'),"
+                                   "(default,'MT4 feed','2','1',null,'true'),"
+                                   "(default,'FIX feed','3','1',null,'true');"
+
+                                   "insert into feeding_platform_rule values "
+                                   "(default,'1','*','10','Fixed','0','0','0','0','0'),"
+                                   "(default,'2','*','10','Fixed','0','0','0','0','0'),"
+                                   "(default,'3','*','10','Fixed','0','0','0','0','0');")
+
+                classBD.inputDatabase(classBD.create_connection(nameDB[1], dateDatabase[1], dateDatabase[2], dateDatabase[3],dateDatabase[4]), feedingSettings)
+
+            else:
+                print('During the start of the process, an error was detected, so the creation of the platform was discontinued./n' + errorInLog)
+
+
+            shutil.copy('C:\\Users\\Grigoriy Milanich\\Desktop\\TP current build\\symbol_map.json', pathDirectory + '\\Gateway\\Settings\\ConnectorConfiguration\\Fix Api')
+
+def main():
+
+    global dateDatabase
+    global nameDB
+    print('If you need download build, press Enter \n'
+          'If you dont need download, press any other key' )
+    if input() == '':
+        pathDirectory = DwnldBuild.downloadOwncloud()
+    else:
+        print('Enter path to folder Gateway:\n' '(Example: C:\\Users\\TP 1.1.1.1 Build 01-01-1970)')
+        pathDirectory = input()
+
+
+    #dateDatabase = classBD.inputDatabase()
+    dateDatabase = ['postgres','tpuser','q1w2e3r4','localhost','5432']
+    connection  = classBD.create_connection(dateDatabase[0], dateDatabase[1], dateDatabase[2], dateDatabase[3], dateDatabase[4])
+    nameDB = classBD.createNameDB(connection)
+    sciprtSQL = classBD.scriptSQL(pathDirectory)
+    classBD.execut_script(sciprtSQL, nameDB, dateDatabase)
+    gateName = classBD.execute_root(dateDatabase, nameDB)
+    copySupplementaryData.run(self=0,pathDirectory=pathDirectory)
+    setupSettingsInFile.runConfigFiles(self=0,pathDirectory=pathDirectory,gateName=gateName)
+    crtPlatform.run(self=0,pathDirectory=pathDirectory)
+
+
+
+classBD = classBDScript()
+copySD = copySupplementaryData()
+main()
+
+
+print(input('Pres key to quit'))
