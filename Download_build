@@ -1,0 +1,100 @@
+import datetime
+import os
+import re
+import shutil
+import time
+import dateparser as dateparser
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+
+
+def downloadOwncloud():
+
+
+
+    driver = webdriver.Chrome(executable_path="C:\chromedriver\chromedriver.exe")
+    #driver.get("https://cloud.t4b.com/#group/10/lib/c02280f1-aeaf-497d-99b1-85df8543e381/Test%20Builds/Build%203.1.1")
+
+    driver.get("https://cloud.t4b.com/#group/10/lib/c02280f1-aeaf-497d-99b1-85df8543e381/Test%20Builds/Build%203.2.0")
+
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "login-panel-hd")))
+    driver.find_element_by_name('login').send_keys('g.milanich@t4b.com')
+    driver.find_element_by_name('password').send_keys('DoYrden22')
+    driver.find_element_by_xpath('//div//button').click()
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, "time")))
+    time.sleep(1)
+    dateTime = driver.find_elements_by_xpath('//tr//time')
+    body = driver.find_elements_by_xpath('//td//span')
+
+    time.sleep(0.5)
+    date_second = []
+    i = 0
+    while i < len(dateTime):
+
+        stringTime = re.findall('[а-я].*назад', str(dateTime[i].text))
+
+        if len(stringTime) != 0 :
+            if str(stringTime[0]) == 'минут назад' or str(stringTime[0]) == 'минуты назад':
+                delta = re.findall('\d{1,2}', str(dateTime[i].text))
+                #print(str(delta[0]) + ' minutes')
+                date_second = (datetime.datetime.now() - datetime.timedelta(minutes=int(delta[0]))).strftime('%d-%m-%Y')
+
+            elif str(stringTime[0]) == 'часов назад' or str(stringTime[0]) == 'час назад' or str(stringTime[0]) == 'часа назад':
+                delta = re.findall('\d{1,2}', str(dateTime[i].text))
+                #print(str(delta[0]) + ' hours')
+                date_second.append((datetime.datetime.now() - datetime.timedelta(hours=int(delta[0]))).strftime('%d-%m-%Y'))
+
+            elif str(stringTime[0])  == 'дней назад':
+                delta = re.findall('\d{1,2}', str(dateTime[i].text))
+                #print(str(delta[0]) + ' days')
+                date_second.append((datetime.datetime.now() - datetime.timedelta(days=int(delta[0]))).strftime('%d-%m-%Y'))
+
+        i +=1
+
+    date_first = sorted(date_second)
+    z = 0
+    build = []
+    while z < len(body):
+        build.append(re.findall('TP.*Build.*'+str(date_first[-1])+'.*zip', str(body[z].text)))
+        #build.append(re.findall('TP.*Patch.'+date_first[-1]+'.*zip', str(body[z].text)))
+        z +=1
+
+
+    build = [i for i in build if i]
+    print(str(build[0][0]))
+
+    driver.find_element_by_xpath("//tr//*[text()='"+ str(build[0][0])+"']").click()
+    driver.switch_to.window(driver.window_handles[1])
+    time.sleep(2)
+    driver.find_element_by_xpath("//a[text()='Скачать']").click()
+
+
+    pathToBuild = copyBuild(str(build[0][0]))
+
+    driver.quit()
+
+    return pathToBuild
+
+
+def copyBuild(buildName):
+
+
+    while os.path.exists('C:\\Users\\Grigoriy Milanich\\Downloads\\'+str(buildName)) != True:
+        print(1)
+        time.sleep(5)
+
+    copyBuild = shutil.copy('C:\\Users\\Grigoriy Milanich\\Downloads\\'+str(buildName),  'C:\\Users\\Grigoriy Milanich\\\Desktop\\TP current build')
+    pathToBuild =  'C:\\Users\\Grigoriy Milanich\\Desktop\\TP current build\\' + (re.findall('TP.*\d{2}.\d{2}.\d{4}', str(buildName)))[0]
+    shutil.unpack_archive(copyBuild, pathToBuild)
+
+
+
+    return pathToBuild
+
+
+
+#downloadOwncloud()
