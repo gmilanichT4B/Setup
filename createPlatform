@@ -1,0 +1,509 @@
+import requests as req
+import shutil
+
+
+def sendRequest(addr,body):
+
+    result = req.post('http://localhost:45124//config/' + str(addr),json=body).ok
+    print('request {} result {}'.format(addr,result))
+
+def mt5create(server,user,password,database):
+
+    requestCreateMT5 = "CreateMt5Connector"
+    requestSetSymbol = 'SetConnectorGlobalSymbolMapping'
+
+    bodyMt5 = {
+            "ConnectorName": "Mt5 plat",
+            "UpdateData": {
+                "Item1": True,
+                "Item2": {
+                    "ConfigVersion": "3.1.1.13",
+                    "ConnectionString": "server=" + server + ";user id="+ user + ";password="+ password + ";database=" + database,
+                    "GatewayAddress": "localhost:4438",
+                    "GatewayLogin": "100",
+                    "GatewayPassword": "qwer1234",
+                    "ManagerLogin": 1000,
+                    "ManagerPassword": "dom1nus",
+                    "Server": "localhost:443",
+                    "ServerOwner": ""
+                        },
+                        "Item3": "localhost"
+                    },
+                    "SettingsChanger": {
+                        "User": "admin",
+                        "Ip": "localhost"
+                    }
+            }
+
+    sendRequest(requestCreateMT5,bodyMt5)
+
+def addLP():
+
+    request = 'AddLp'
+
+    bodyLMAX = {
+            "LPName": "LMAX",
+            "UpdateData": {
+                "Name": "LMAX",
+                "TypeName": "LMAX",
+                "FeederSession": {
+                    "SenderCompId": "GrishaTest",
+                    "SenderSubId": "",
+                    "TargetCompId": "LMXBDM",
+                    "BeginString": "FIX.4.4",
+                    "Username": "GrishaTest",
+                    "Password": "qwer1234",
+                    "Account": "",
+                    "ReconnectInterval": "10",
+                    "FileStorePath": "LMAX_store",
+                    "FileLogPath": "LMAX_log",
+                    "WriteLogs": "True",
+                    "StartTime": "00:00:00",
+                    "EndTime": "23:59:59",
+                    "SocketConnectHost": "localhost",
+                    "SocketConnectPort": "7001",
+                    "Server": "",
+                    "Login": "",
+                    "QueryInterval": "0",
+                    "Brand": "",
+                    "PartyId": "",
+                    "OnBehalfOfCompId": "",
+                    "IgnoreLogOptions": "Nothing",
+                    "MaxMessagesPerSec": "1000",
+                    "QuoteTextProcessing": "True",
+                    "ResetOnLogon": "True",
+                    "ResetOnLogout": "False",
+                    "ResetOnDisconnect": "True",
+                    "TargetSubID": "",
+                    "ResubscribeOnRejectTimeout": "30",
+                    "SendRedundantResendRequests": "False"
+                },
+                "TraderSession": {
+                    "SenderCompId": "GrishaTest",
+                    "SenderSubId": "",
+                    "TargetCompId": "LMXBD",
+                    "BeginString": "FIX.4.4",
+                    "Username": "GrishaTest",
+                    "Password": "qwer1234",
+                    "Account": "",
+                    "ReconnectInterval": "10",
+                    "FileStorePath": "LMAX_store",
+                    "FileLogPath": "LMAX_log",
+                    "WriteLogs": "True",
+                    "StartTime": "00:00:00",
+                    "EndTime": "23:59:59",
+                    "SocketConnectHost": "localhost",
+                    "SocketConnectPort": "7002",
+                    "Server": "",
+                    "Login": "",
+                    "QueryInterval": "0",
+                    "Brand": "",
+                    "PartyId": "",
+                    "OnBehalfOfCompId": "",
+                    "IgnoreLogOptions": "Nothing",
+                    "MaxMessagesPerSec": "1000",
+                    "QuoteTextProcessing": "False",
+                    "ResetOnLogon": "True",
+                    "ResetOnLogout": "False",
+                    "ResetOnDisconnect": "True",
+                    "TargetSubID": "",
+                    "ResubscribeOnRejectTimeout": "30",
+                    "SendRedundantResendRequests": "False"
+                }
+                },
+                "SettingsChanger": {
+                    "User": "admin",
+                    "Ip": "localhost"
+                }
+            }
+
+    bodyBbook = {
+                "LPName": "Bbook",
+                "UpdateData": {
+                    "Name": "Bbook",
+                    "TypeName": "Bbook",
+                    "FeederSession": None,
+                    "TraderSession": None
+                },
+                "SettingsChanger": {
+                    "User": "admin",
+                    "Ip": "localhost"
+                    }
+                }
+
+    sendRequest(request,bodyLMAX)
+    sendRequest(request,bodyBbook)
+
+def crtRule():
+
+
+    requestExecution = 'UpdateExecutionConfig'
+    requestFedding = 'crtExecution'
+
+
+    bodyExecution = {
+                "Version": 1,
+                "RoutingRules": [{
+                    "Name": "Rule LMAX",
+                    "ProcessorName": "Proc LMXA",
+                    "Logins": "*",
+                    "Groups": "*",
+                    "Symbols": "*",
+                    "OrderTypes": ["All"],
+                    "OrderSides": "All",
+                    "Platforms": ["All"],
+                    "Colors": [],
+                    "IsAllowedColors": False,
+                    "Security": "*",
+                    "MinVolume": 0.0,
+                    "MaxVolume": 1000.0,
+                    "Schedule": {
+                        "ScheduleType": "Always",
+                        "Days": ["Everyday"],
+                        "Start": 0,
+                        "Duration": 0,
+                        "Begin": 1604388901709,
+                        "End": 1604388901709
+                    },
+                    "Enabled": True
+                }],
+                "ProcessingRules": [{
+                    "Name": "Proc LMXA",
+                    "LpPool": "LMAX pool",
+                    "Rules": [{
+                        "Id": 0,
+                        "Symbols": "*",
+                        "Logins": "*",
+                        "Groups": "*",
+                        "MinVolume": 0.0,
+                        "MaxVolume": 0.0,
+                        "OrderTypes": ["All"],
+                        "OrderSides": "All",
+                        "Security": "*",
+                        "MarkupTo": 0,
+                        "MarkupFrom": 0,
+                        "LimitMarkupTo": 0,
+                        "LimitMarkupFrom": 0,
+                        "DelayFrom": 0,
+                        "DelayTo": 0,
+                        "RoundType": "None",
+                        "Commission": 0.0,
+                        "CommissionType": "None",
+                        "TakePositiveSlippage": False,
+                        "AllowContinuousExecutionForFOK": False,
+                        "Enabled": True
+                    }]
+                }],
+                "AggregationPools": [{
+                    "Name": "LMAX pool",
+                    "Lps": ["LMAX"],
+                    "Backup": "",
+                    "BookType": "Abook",
+                    "AggregationType": "SingleBook",
+                    "ExecutorsPercents": [],
+                    "Enabled": True
+                }],
+                "LpsA": [{
+                    "Type": "LMAX",
+                    "Name": "LMAX",
+                    "Feeder": "LMAX",
+                    "AllowPartialFilling": True,
+                    "AllowLimitsOnLP": False,
+                    "Enabled": True
+                }],
+                "LpsB": [{
+                    "Type": "Bbook",
+                    "Name": "Bbook",
+                    "Rules": [{
+                        "Id": 0,
+                        "Symbols": "*",
+                        "Logins": "*",
+                        "Groups": "*",
+                        "MinVolume": 0.0,
+                        "MaxVolume": 1000000000.0,
+                        "OrderTypes": ["All"],
+                        "OrderSides": "All",
+                        "Security": "*",
+                        "DelayFrom": 0,
+                        "DelayTo": 0,
+                        "TicksThreshold": 0,
+                        "ConsiderConnectorSpread": True,
+                        "PriceOption": "ORDER_PRICE",
+                        "WorstPricePercentage": 0,
+                        "Enabled": True
+                    }]
+                }]
+            }
+    bodyLPFeed = {
+                    "Version": 1,
+                    "FeedPlatforms": [],
+                    "FeedAggregations": [],
+                    "Lps": [{
+                        "Id": 1,
+                        "Name": "LMAX",
+                        "Type": "LMAX",
+                        "Depth": 16,
+                        "Enabled": True
+                    }]
+                }
+    bodyFeddAggregation = {
+                    "Version": 1,
+                    "FeedPlatforms": [],
+                    "FeedAggregations": [{
+                        "Id": -1,
+                        "Feeders": [1],
+                        "Type": "TopPrice",
+                        "Name": "feed test2"
+                    }],
+                    "Lps": [{
+                        "Id": 1,
+                        "Name": "LMAX",
+                        "Type": "LMAX",
+                        "Depth": 16,
+                        "Enabled": True
+                    }]
+                }
+    bodyFeedPlatform = {
+                    "Version": 1,
+                    "FeedPlatforms": [{
+                        "Id": 3,
+                        "Name": "Mt5 feed",
+                        "AggregatedFeeder": 3,
+                        "BackupFeedAggregationId": 0,
+                        "Type": "MetaTrader5",
+                        "Connector": "Mt5 plat",
+                        "Enabled": True,
+                        "Rules": [{
+                            "Id": 3,
+                            "Symbols": ["*"],
+                            "MarkupAsk": 0,
+                            "MarkupBid": 0,
+                            "MinSpread": 0,
+                            "MaxSpread": 0,
+                            "MarkupType": "Fixed",
+                            "MaxLevels": 10
+                        }]
+                    }],
+                    "FeedAggregations": [{
+                        "Id": 3,
+                        "Feeders": [1],
+                        "Type": "TopPrice",
+                        "Name": "feed test"
+                    }],
+                    "Lps": [{
+                        "Id": 1,
+                        "Name": "LMAX",
+                        "Type": "LMAX",
+                        "Depth": 15,
+                        "Enabled": True
+                    }]
+                }
+
+
+
+    sendRequest(requestExecution,bodyExecution)
+    #sendRequest(requestFedding,bodyFeddAggregation)
+
+def mt4create(server,user,password,database):
+
+    requestAddPlatform = 'CreateMt4Connector'
+
+    requestAddSession = 'AddMt4Session'
+
+    bodySessionTrade = {
+                    "ConnectorName": "Mt4 plat",
+                    "UpdateData": {
+                        "SenderCompId": "FixServer",
+                        "TargetCompId": "clientTrade",
+                        "BeginString": "FIX.4.4",
+                        "UserName": "clientTrade",
+                        "Password": "qwer1234",
+                        "DefaultAccount": "",
+                        "Accounts": "*",
+                        "Groups": "*",
+                        "Active": False
+                    },
+                    "SettingsChanger": {
+                        "User": "admin",
+                        "Ip": "localhost"
+                    }
+                }
+
+    bodySessionFeed = {
+                "ConnectorName": "Mt4 plat",
+                "UpdateData": {
+                    "SenderCompId": "FixServer",
+                    "TargetCompId": "clientFeed",
+                    "BeginString": "FIX.4.4",
+                    "UserName": "clientFeed",
+                    "Password": "qwer1234",
+                    "DefaultAccount": "",
+                    "Accounts": "*",
+                    "Groups": "*",
+                    "Active": False
+                },
+                "SettingsChanger": {
+                    "User": "admin",
+                    "Ip": "localhost"
+                }
+            }
+
+    bodyAddPlatform = {
+                "ConnectorName": "Mt4 plat",
+                "UpdateData": {
+                    "Item1": True,
+                    "Item2": {
+                        "ConfigVersion": "3.2.0.5",
+                        "ConnectionString": "server=" + server + ";user id="+ user + ";password="+ password + ";database=" + database,
+                        "OrderRestoreInterval": 1800,
+                        "Mt4Server": "192.168.56.101:443",
+                        "Mt4ManagerLogin": 1,
+                        "Mt4ManagerPassword": "manager",
+                        "ConfirmRequestsEnable": True,
+                        "RMQHost": "localhost",
+                        "RMQPort": 5672,
+                        "RMQVirtualHost": "/",
+                        "RMQLogin": "test",
+                        "RMQPassword": "test",
+                        "RMQExchange": "rfb.direct",
+                        "RMQQueue": "RFB"
+                    },
+                    "Item3": {
+                        "SocketAcceptPort": 5001,
+                        "UseLocalTime": False,
+                        "StartTime": "00:00:00",
+                        "EndTime": "23:59:59",
+                        "SslEnable": False,
+                        "FileStorePath": "Mt4 plat_store",
+                        "FileLogPath": "Mt4 plat_log"
+                    },
+                    "Item4": 'null',
+                    "Item5": "Tools for Brokers Pte. Ltd. |Test"
+                },
+                "SettingsChanger": {
+                    "User": "admin",
+                    "Ip": "localhost"
+                }
+            }
+
+    getSymbol = req.get('http://localhost:45124//config/GetConnectorGlobalSymbolMapping?connector=Mt4%20plat').json()
+
+
+    sendRequest(requestAddPlatform,bodyAddPlatform)
+    sendRequest(requestAddSession,bodySessionTrade)
+    sendRequest(requestAddSession,bodySessionFeed)
+
+def fixcreate(server,user,password,database):
+
+    requestCreatePlatform = 'CreateFixConnector'
+    requestCreateSession = 'AddFixSession'
+    requestCreateAccount = 'AddFixUser'
+    requestDeposit = 'AddFixUserDeposit'
+
+    bodyCrtPlatform = {
+                        "ConnectorName": "Fix Api",
+                        "UpdateData": {
+                            "Item1": True,
+                            "Item2": {
+                                "ConfigVersion": "3.1.1.11",
+                                "ConnectionString": "server=" + server + ";user id="+ user + ";password="+ password + ";database=" + database,
+                                "OrderRestoreInterval": 0
+                            },
+                            "Item3": {
+                                "SocketAcceptPort": 5003,
+                                "UseLocalTime": True,
+                                "StartTime": "00:00:00",
+                                "EndTime": "23:59:59.9990000",
+                                "SslEnable": False,
+                                "FileStorePath": "Fix Api_store",
+                                "FileLogPath": "Fix Api_log"
+                            },
+                            "Item4": 'null'
+                        },
+                        "SettingsChanger": {
+                            "User": "admin",
+                            "Ip": "localhost"
+                        }
+                    }
+    bodySessionTrade = {
+                    "ConnectorName": "Fix Api",
+                    "UpdateData": {
+                        "SenderCompId": "FixApi",
+                        "TargetCompId": "FixClientTrade",
+                        "BeginString": "FIX.4.4",
+                        "UserName": "FixClientTrade",
+                        "Password": "qwer1234",
+                        "DefaultAccount": "11",
+                        "Accounts": "*",
+                        "Groups": "*",
+                        "Active": False
+                    },
+                    "SettingsChanger": {
+                        "User": "admin",
+                        "Ip": "localhost"
+                    }
+                }
+    bodySessionFeed = {
+                "ConnectorName": "Fix Api",
+                "UpdateData": {
+                    "SenderCompId": "FixApi",
+                    "TargetCompId": "FixClientFeed",
+                    "BeginString": "FIX.4.4",
+                    "UserName": "FixClientFeed",
+                    "Password": "qwer1234",
+                    "DefaultAccount": "11",
+                    "Accounts": "*",
+                    "Groups": "*",
+                    "Active": False
+                },
+                "SettingsChanger": {
+                    "User": "admin",
+                    "Ip": "localhost"
+                }
+            }
+    bodyAccount = {
+                    "ConnectorName": "Fix Api",
+                    "UpdateData": {
+                        "Login": 11,
+                        "Group": "Fix",
+                        "Leverage": 1,
+                        "Currency": "USD",
+                        "StopOut": 0.0,
+                        "MarginOnActivate": False
+                    },
+                    "SettingsChanger": {
+                        "User": "admin",
+                        "Ip": "localhost"
+                    }
+                }
+    bodyDeposit = {
+                    "ConnectorName": "Fix Api",
+                    "UpdateData": {
+                        "Login": 11,
+                        "IsDeposit": True,
+                        "Amount": 1000000.0,
+                        "Time": "2021-01-27T12:35:38.7824763Z",
+                        "Comment": " ",
+                        "AllowNegativeBalance": False
+                    },
+                    "SettingsChanger": 'null'
+                }
+
+    sendRequest(requestCreatePlatform,bodyCrtPlatform)
+    sendRequest(requestCreateSession,bodySessionTrade)
+    sendRequest(requestCreateSession,bodySessionFeed)
+    sendRequest(requestCreateAccount,bodyAccount)
+    sendRequest(requestDeposit,bodyDeposit)
+
+
+
+
+def manual_request():
+
+    mt5create('localhost','tpuser','q1w2e3r4','mt5_32013')
+    mt4create('localhost','tpuser','q1w2e3r4','mt4_32013')
+    fixcreate('localhost','tpuser','q1w2e3r4','fix_32013')
+    addLP()
+    crtRule()
+
+#manual_request()
